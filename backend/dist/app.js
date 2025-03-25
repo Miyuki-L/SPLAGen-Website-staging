@@ -58,5 +58,6 @@ app.use((error, req, res, next) => {
 });
 // Start the server
 app.listen(port, () => {
+    //eslint-disable-next-line @typescript-eslint/restrict-template-expressions
     console.log(`[server]: Server is running at http://localhost:${port}`);
 });
