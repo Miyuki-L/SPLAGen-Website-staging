@@ -15,11 +15,13 @@ Object.defineProperty(exports, "__esModule", { value: true });
 exports.getDiscussion = exports.getMultipleDiscussions = exports.deleteMultipleDiscussions = exports.deleteDiscussion = exports.editDiscussion = exports.createDiscussion = void 0;
 const mongoose_1 = require("mongoose");
 const discussionPost_1 = __importDefault(require("../models/discussionPost"));
+const user_1 = require("../models/user");
 // Create a discussion post
 const createDiscussion = (req, res, next) => __awaiter(void 0, void 0, void 0, function* () {
     try {
-        const { userId, title, message, channel } = req.body;
-        const newDiscussion = new discussionPost_1.default({ userId, title, message, channel, replies: [] });
+        const { title, message, channel } = req.body;
+        const userId = req.mongoID;
+        const newDiscussion = new discussionPost_1.default({ userId, title, message, channel });
         yield newDiscussion.save();
         res.status(201).json({ message: "Discussion created successfully", discussion: newDiscussion });
     }
@@ -33,14 +35,29 @@ const editDiscussion = (req, res, next) => __awaiter(void 0, void 0, void 0, fun
     try {
         const { id } = req.params;
         const { title, message, channel } = req.body;
+        const userUid = req.mongoID;
         // Ensure the id is valid
         const objectId = mongoose_1.Types.ObjectId.isValid(id) ? new mongoose_1.Types.ObjectId(id) : null;
         if (!objectId) {
             res.status(400).json({ error: "Invalid ID format" });
+            return;
         }
-        const discussion = yield discussionPost_1.default.findByIdAndUpdate(objectId, { title, message, channel }, { new: true });
+        // Find the discussion by ID
+        const discussion = yield discussionPost_1.default.findById(objectId);
         if (!discussion) {
             res.status(404).json({ error: "Discussion not found" });
+            return;
+        }
+        //Ensure user is the poster
+        if (!discussion.userId.equals(userUid)) {
+            res.status(403).json({ error: "Unauthorized: You can only edit your own posts" });
+            return;
+        }
+        // Update the discussion if the user is authorized
+        const result = yield discussionPost_1.default.updateOne({ _id: objectId }, { $set: { title, message, channel } });
+        if (!result.acknowledged) {
+            res.status(400).json({ error: "Discussion not updated" });
+            return;
         }
         res.status(200).json({ message: "Discussion updated successfully", discussion });
     }
@@ -53,10 +70,20 @@ exports.editDiscussion = editDiscussion;
 const deleteDiscussion = (req, res, next) => __awaiter(void 0, void 0, void 0, function* () {
     try {
         const { id } = req.params;
-        const discussion = yield discussionPost_1.default.findByIdAndDelete(id);
+        const userUid = req.mongoID;
+        const role = req.role;
+        // Find the discussion by ID
+        const discussion = yield discussionPost_1.default.findById(id);
         if (!discussion) {
             res.status(404).json({ error: "Discussion not found" });
+            return;
         }
+        if (!discussion.userId.equals(userUid) &&
+            ![user_1.UserRole.ADMIN, user_1.UserRole.SUPERADMIN].includes(role)) {
+            res.status(403).json({ error: "Unauthorized: You can only delete your own posts" });
+            return;
+        }
+        yield discussionPost_1.default.deleteOne({ _id: id });
         res.status(200).json({ message: "Discussion deleted successfully" });
     }
     catch (error) {

@@ -38,6 +38,7 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
 Object.defineProperty(exports, "__esModule", { value: true });
 const express_1 = __importDefault(require("express"));
 const ReplyController = __importStar(require("../controllers/reply"));
+const auth_1 = require("../middleware/auth");
 const ReplyValidator = __importStar(require("../validators/reply"));
 const router = express_1.default.Router();
 /**
@@ -47,8 +48,8 @@ const router = express_1.default.Router();
  * PUT /api/replies/:id - Edit a reply post
  * DELETE /api/replies/:id - Delete a reply post
  */
-router.post("/", ReplyValidator.createReply, ReplyController.createReply);
-router.get("/:discussionId", ReplyValidator.getReplies, ReplyController.getReplies);
-router.put("/:id", ReplyValidator.editReply, ReplyController.editReply);
-router.delete("/:id", ReplyValidator.deleteReply, ReplyController.deleteReply);
+router.post("/", auth_1.requireSignedIn, ReplyValidator.createReply, ReplyController.createReply);
+router.get("/:discussionId", auth_1.requireSignedIn, ReplyValidator.getReplies, ReplyController.getReplies);
+router.put("/:id", auth_1.requireSignedIn, ReplyValidator.editReply, ReplyController.editReply);
+router.delete("/:id", auth_1.requireSignedIn, ReplyValidator.deleteReply, ReplyController.deleteReply);
 exports.default = router;

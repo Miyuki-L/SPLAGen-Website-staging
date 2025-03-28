@@ -1,11 +1,35 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
+exports.UserMembership = exports.UserRole = void 0;
 const mongoose_1 = require("mongoose");
+var UserRole;
+(function (UserRole) {
+    UserRole["SUPERADMIN"] = "superadmin";
+    UserRole["ADMIN"] = "admin";
+    UserRole["MEMBER"] = "member";
+})(UserRole || (exports.UserRole = UserRole = {}));
+var UserMembership;
+(function (UserMembership) {
+    UserMembership["STUDENT"] = "student";
+    UserMembership["GENETIC_COUNSELOR"] = "geneticCounselor";
+    UserMembership["HEALTHCARE_PROVIDER"] = "healthcareProvider";
+    UserMembership["ASSOCIATE"] = "associate";
+})(UserMembership || (exports.UserMembership = UserMembership = {}));
 const userSchema = new mongoose_1.Schema({
     firebaseId: { type: String, required: true },
+    role: { type: String, enum: ["superadmin", "admin", "member"], required: true },
     account: {
-        type: { type: String, enum: ["superadmin", "admin", "counselor", "student"], required: true },
-        inDirectory: { type: Boolean, required: true },
+        inDirectory: {
+            type: mongoose_1.Schema.Types.Mixed, // Allows boolean or string
+            default: "pending",
+            validate: {
+                validator: function (v) {
+                    return v === true || v === false || v === "pending";
+                },
+                message: "Status must be true, false, or 'pending'",
+            },
+            required: true,
+        },
         profilePicture: { type: String, default: "" },
         // can they have multiple memberships?
         membership: {

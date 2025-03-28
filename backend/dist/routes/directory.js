@@ -37,14 +37,10 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
 };
 Object.defineProperty(exports, "__esModule", { value: true });
 const express_1 = __importDefault(require("express"));
-const DiscussionController = __importStar(require("../controllers/discussion"));
+const DirectoryController = __importStar(require("../controllers/directory"));
 const auth_1 = require("../middleware/auth");
-const DiscussionValidator = __importStar(require("../validators/discussion"));
+const DirectoryValidator = __importStar(require("../validators/directory"));
 const router = express_1.default.Router();
-router.post("/", auth_1.requireSignedIn, DiscussionValidator.createDiscussion, DiscussionController.createDiscussion);
-router.put("/:id", auth_1.requireSignedIn, DiscussionValidator.editDiscussion, DiscussionController.editDiscussion);
-router.delete("/:id", auth_1.requireSignedIn, DiscussionValidator.deleteDiscussion, DiscussionController.deleteDiscussion);
-router.delete("/", auth_1.requireSignedIn, auth_1.requireAdminOrSuperAdmin, DiscussionValidator.deleteMultipleDiscussions, DiscussionController.deleteMultipleDiscussions);
-router.get("/", auth_1.requireSignedIn, DiscussionValidator.getMultipleDiscussions, DiscussionController.getMultipleDiscussions);
-router.get("/:id", auth_1.requireSignedIn, DiscussionValidator.getDiscussion, DiscussionController.getDiscussion);
+router.post("/approve", auth_1.requireSignedIn, auth_1.requireAdminOrSuperAdmin, DirectoryValidator.approveDirectoryEntry, DirectoryController.approveDirectoryEntry);
+router.post("/deny", auth_1.requireSignedIn, auth_1.requireAdminOrSuperAdmin, DirectoryValidator.denyDirectoryEntry, DirectoryController.denyDirectoryEntry);
 exports.default = router;

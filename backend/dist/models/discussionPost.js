@@ -7,12 +7,6 @@ const discussionPostSchema = new mongoose_1.Schema({
         ref: "User",
         required: true,
     },
-    replies: [
-        {
-            type: mongoose_1.Schema.Types.ObjectId,
-            ref: "Reply",
-        },
-    ],
     title: {
         type: String,
         required: true,

@@ -38,25 +38,28 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
 Object.defineProperty(exports, "__esModule", { value: true });
 const express_1 = __importDefault(require("express"));
 const UserController = __importStar(require("../controllers/user"));
+const auth_1 = require("../middleware/auth");
 const UserValidator = __importStar(require("../validators/user"));
 const router = express_1.default.Router();
 /**
  * User directory routes
+ * GET /api/users/whoami - Get current user
  * POST /api/users - Add user to directory
  * DELETE /api/users/:id - Remove user from directory
  * GET /api/users - Get all users in directory
  * GET /api/users/:id - Get specific user from directory
  */
+router.get("/whoami", auth_1.requireSignedIn, UserController.getWhoAmI);
 router.post("/", UserValidator.createUser, UserController.createUser);
-router.delete("/:id", UserValidator.deleteUser, UserController.deleteUser);
-router.get("/", UserController.getAllUsers);
-router.get("/:id", UserValidator.getUser, UserController.getUser);
-router.get("/personal-information", UserController.getPersonalInformation);
-router.post("/personal-information", UserController.editPersonalInformation);
-router.get("/professional-information", UserController.getProfessionalInformation);
-router.post("/professional-information", UserController.editProfessionalInformation);
-router.get("/directory/personal-information", UserController.getDirectoryPersonalInformation);
-router.post("/directory/personal-information", UserController.editDirectoryPersonalInformation);
-router.get("/directory/display-info", UserController.getDirectoryDisplayInfo);
-router.post("/directory/display-info", UserController.editDirectoryDisplayInfo);
+router.delete("/:id", auth_1.requireSignedIn, auth_1.requireAdminOrSuperAdmin, UserValidator.deleteUser, UserController.deleteUser);
+router.get("/", auth_1.requireSignedIn, UserController.getAllUsers);
+router.get("/:id", auth_1.requireSignedIn, UserValidator.getUser, UserController.getUser);
+router.get("/personal-information", auth_1.requireSignedIn, UserController.getPersonalInformation);
+router.post("/personal-information", auth_1.requireSignedIn, UserController.editPersonalInformation);
+router.get("/professional-information", auth_1.requireSignedIn, UserController.getProfessionalInformation);
+router.post("/professional-information", auth_1.requireSignedIn, UserController.editProfessionalInformation);
+router.get("/directory/personal-information", auth_1.requireSignedIn, UserController.getDirectoryPersonalInformation);
+router.post("/directory/personal-information", auth_1.requireSignedIn, UserController.editDirectoryPersonalInformation);
+router.get("/directory/display-info", auth_1.requireSignedIn, UserController.getDirectoryDisplayInfo);
+router.post("/directory/display-info", auth_1.requireSignedIn, UserController.editDirectoryDisplayInfo);
 exports.default = router;

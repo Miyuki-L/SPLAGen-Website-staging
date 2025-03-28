@@ -6,29 +6,21 @@ Object.defineProperty(exports, "__esModule", { value: true });
 exports.getDiscussion = exports.getMultipleDiscussions = exports.deleteMultipleDiscussions = exports.deleteDiscussion = exports.editDiscussion = exports.createDiscussion = void 0;
 const express_validator_1 = require("express-validator");
 const mongoose_1 = __importDefault(require("mongoose"));
-function validateRequest(req, res, next) {
-    const errors = (0, express_validator_1.validationResult)(req);
-    if (!errors.isEmpty()) {
-        const errorList = errors.array();
-        res.status(400).json({ errors: errorList });
-        return;
-    }
-    next();
-}
+const validateRequestHelper_1 = require("./validateRequestHelper");
 exports.createDiscussion = [
     (0, express_validator_1.body)("title").isString().notEmpty().trim().withMessage("Title is required"),
     (0, express_validator_1.body)("message").isString().notEmpty().trim().withMessage("Message is required"),
-    validateRequest,
+    validateRequestHelper_1.validateRequest,
 ];
 exports.editDiscussion = [
     (0, express_validator_1.param)("id").isMongoId().withMessage("Invalid MongoDB ObjectId"),
     (0, express_validator_1.body)("title").optional().isString().trim().withMessage("Title must be a string"),
     (0, express_validator_1.body)("content").optional().isString().trim().withMessage("Content must be a string"),
-    validateRequest,
+    validateRequestHelper_1.validateRequest,
 ];
 exports.deleteDiscussion = [
     (0, express_validator_1.param)("id").isMongoId().withMessage("Invalid MongoDB ObjectId"),
-    validateRequest,
+    validateRequestHelper_1.validateRequest,
 ];
 exports.deleteMultipleDiscussions = [
     (0, express_validator_1.body)("ids")
@@ -40,7 +32,7 @@ exports.deleteMultipleDiscussions = [
         }
         return true;
     }),
-    validateRequest,
+    validateRequestHelper_1.validateRequest,
 ];
 exports.getMultipleDiscussions = [
     (0, express_validator_1.query)("page").optional().toInt().isInt({ min: 1 }).withMessage("Page must be a positive integer"),
@@ -49,9 +41,9 @@ exports.getMultipleDiscussions = [
         .toInt()
         .isInt({ min: 1 })
         .withMessage("Limit must be a positive integer"),
-    validateRequest,
+    validateRequestHelper_1.validateRequest,
 ];
 exports.getDiscussion = [
     (0, express_validator_1.param)("id").isMongoId().withMessage("Invalid MongoDB ObjectId"),
-    validateRequest,
+    validateRequestHelper_1.validateRequest,
 ];

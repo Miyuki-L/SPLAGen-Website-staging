@@ -38,10 +38,12 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
 Object.defineProperty(exports, "__esModule", { value: true });
 const express_1 = __importDefault(require("express"));
 const AnnouncementController = __importStar(require("../controllers/announcement"));
+const auth_1 = require("../middleware/auth");
 const router = express_1.default.Router();
-router.post("/create", AnnouncementController.createAnnouncement);
-router.put("/edit/:id", AnnouncementController.editAnnouncement);
-router.delete("/delete/:id", AnnouncementController.deleteAnnouncement);
-router.get("/all", AnnouncementController.getMultipleAnnouncements);
-router.get("/:id", AnnouncementController.getIndividualAnnouncementDetails);
+//TODO add validators
+router.post("/create", auth_1.requireSignedIn, auth_1.requireAdminOrSuperAdmin, AnnouncementController.createAnnouncement);
+router.put("/edit/:id", auth_1.requireSignedIn, auth_1.requireAdminOrSuperAdmin, AnnouncementController.editAnnouncement);
+router.delete("/delete/:id", auth_1.requireSignedIn, auth_1.requireAdminOrSuperAdmin, AnnouncementController.deleteAnnouncement);
+router.get("/all", auth_1.requireSignedIn, AnnouncementController.getMultipleAnnouncements);
+router.get("/:id", auth_1.requireSignedIn, AnnouncementController.getIndividualAnnouncementDetails);
 exports.default = router;
