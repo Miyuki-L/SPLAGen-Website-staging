@@ -1,108 +1,95 @@
 "use strict";
+var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, generator) {
+    function adopt(value) { return value instanceof P ? value : new P(function (resolve) { resolve(value); }); }
+    return new (P || (P = Promise))(function (resolve, reject) {
+        function fulfilled(value) { try { step(generator.next(value)); } catch (e) { reject(e); } }
+        function rejected(value) { try { step(generator["throw"](value)); } catch (e) { reject(e); } }
+        function step(result) { result.done ? resolve(result.value) : adopt(result.value).then(fulfilled, rejected); }
+        step((generator = generator.apply(thisArg, _arguments || [])).next());
+    });
+};
+var __importDefault = (this && this.__importDefault) || function (mod) {
+    return (mod && mod.__esModule) ? mod : { "default": mod };
+};
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.deleteReply = exports.editReply = exports.getReplies = exports.createReply = void 0;
-// Temporary storage until database is set up
-const replies = [];
-const createReply = (req, res) => {
+const reply_1 = __importDefault(require("../models/reply"));
+const user_1 = require("../models/user");
+const createReply = (req, res, next) => __awaiter(void 0, void 0, void 0, function* () {
     try {
-        const { discussionId, content, userUid } = req.body;
-        if (!discussionId || !content) {
-            res.status(400).json({ error: "discussionId and content are required" });
-            return;
-        }
-        if (!userUid) {
-            res.status(403).json({ error: "User not signed in" });
-            return;
-        }
-        const newReply = {
-            id: replies.length + 1,
-            discussionId: parseInt(discussionId, 10),
-            content,
-            userId: userUid,
-        };
-        replies.push(newReply);
+        const userId = req.mongoID;
+        const { postId, message } = req.body;
+        const newReply = new reply_1.default({ userId, postId, message });
+        yield newReply.save();
         res.status(201).json({ message: "Reply created successfully", reply: newReply });
     }
     catch (error) {
-        console.error("Error creating reply:", error);
-        res.status(500).json({ error: "Internal server error" });
+        next(error);
     }
-};
+});
 exports.createReply = createReply;
-const getReplies = (req, res) => {
+const getReplies = (req, res, next) => __awaiter(void 0, void 0, void 0, function* () {
     try {
-        const discussionId = parseInt(req.params.discussionId, 10);
-        if (isNaN(discussionId)) {
-            res.status(400).json({ error: "Valid Discussion ID is required" });
-            return;
-        }
-        const discussionReplies = replies.filter((reply) => reply.discussionId === discussionId);
+        const { postId } = req.params;
+        const discussionReplies = yield reply_1.default.find({ postId });
         res.status(200).json({ replies: discussionReplies });
     }
     catch (error) {
-        console.error("Error fetching replies:", error);
-        res.status(500).json({ error: "Internal server error" });
+        next(error);
     }
-};
+});
 exports.getReplies = getReplies;
-const editReply = (req, res) => {
+const editReply = (req, res, next) => __awaiter(void 0, void 0, void 0, function* () {
     try {
-        const id = parseInt(req.params.id, 10);
-        const { content, userUid } = req.body;
-        if (!content) {
-            res.status(400).json({ error: "Content is required to update reply" });
-            return;
-        }
-        if (!userUid) {
-            res.status(403).json({ error: "User not signed in" });
-            return;
-        }
-        const reply = replies.find((r) => r.id === id);
+        const userUid = req.mongoID;
+        const { id } = req.params;
+        const { message } = req.body;
+        // Find the reply by ID
+        const reply = yield reply_1.default.findById(id);
         if (!reply) {
             res.status(404).json({ error: "Reply not found" });
             return;
         }
-        if (reply.userId !== userUid) {
+        // Check if the user is the owner of the reply
+        if (!reply.userId.equals(userUid)) {
             res.status(403).json({ error: "Unauthorized: You can only edit your own replies" });
             return;
         }
-        reply.content = content;
+        // Update the reply
+        reply.message = message;
+        yield reply.save();
         res.status(200).json({ message: "Reply updated successfully", reply });
     }
     catch (error) {
-        console.error("Error editing reply:", error);
-        res.status(500).json({ error: "Internal server error" });
+        next(error);
     }
-};
+});
 exports.editReply = editReply;
-const deleteReply = (req, res) => {
+const deleteReply = (req, res, next) => __awaiter(void 0, void 0, void 0, function* () {
     try {
-        const id = parseInt(req.params.id, 10);
-        const { userUid } = req.body;
-        if (isNaN(id)) {
-            res.status(400).json({ error: "Valid Reply ID is required" });
-            return;
-        }
-        if (!userUid) {
-            res.status(403).json({ error: "User not signed in" });
-            return;
-        }
-        const replyIndex = replies.findIndex((reply) => reply.id === id);
-        if (replyIndex === -1) {
+        const { id } = req.params;
+        const userUid = req.mongoID;
+        const role = req.role;
+        // Find the reply by ID
+        const reply = yield reply_1.default.findById(id);
+        if (!reply) {
             res.status(404).json({ error: "Reply not found" });
             return;
         }
-        const reply = replies[replyIndex];
-        if (reply.userId !== userUid) {
-            res.status(403).json({ error: "Unauthorized: You can only delete your own replies" });
+        // Check if the user is the owner of the reply or an admin
+        if (!reply.userId.equals(userUid) &&
+            ![user_1.UserRole.ADMIN, user_1.UserRole.SUPERADMIN].includes(role)) {
+            res
+                .status(403)
+                .json({ error: "Unauthorized: You can only delete your own posts or are an admin" });
             return;
         }
-        replies.splice(replyIndex, 1);
+        // Delete the reply
+        yield reply_1.default.deleteOne({ _id: id });
         res.status(200).json({ message: "Reply deleted successfully" });
     }
     catch (error) {
-        console.error("Error deleting reply:", error);
-        res.status(500).json({ error: "Internal server error" });
+        next(error);
     }
-};
+});
 exports.deleteReply = deleteReply;

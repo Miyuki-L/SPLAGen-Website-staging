@@ -15,6 +15,7 @@ Object.defineProperty(exports, "__esModule", { value: true });
 exports.getDiscussion = exports.getMultipleDiscussions = exports.deleteMultipleDiscussions = exports.deleteDiscussion = exports.editDiscussion = exports.createDiscussion = void 0;
 const mongoose_1 = require("mongoose");
 const discussionPost_1 = __importDefault(require("../models/discussionPost"));
+const reply_1 = __importDefault(require("../models/reply"));
 const user_1 = require("../models/user");
 // Create a discussion post
 const createDiscussion = (req, res, next) => __awaiter(void 0, void 0, void 0, function* () {
@@ -80,10 +81,18 @@ const deleteDiscussion = (req, res, next) => __awaiter(void 0, void 0, void 0, f
         }
         if (!discussion.userId.equals(userUid) &&
             ![user_1.UserRole.ADMIN, user_1.UserRole.SUPERADMIN].includes(role)) {
-            res.status(403).json({ error: "Unauthorized: You can only delete your own posts" });
+            res
+                .status(403)
+                .json({ error: "Unauthorized: You can only delete your own posts or are an admin" });
             return;
         }
-        yield discussionPost_1.default.deleteOne({ _id: id });
+        const result = yield discussionPost_1.default.deleteOne({ _id: id });
+        if (!result.acknowledged) {
+            res.status(400).json({ error: "Discussion was not deleted" });
+            return;
+        }
+        // Delete replies associated with the discussion
+        yield reply_1.default.deleteMany({ postId: id });
         res.status(200).json({ message: "Discussion deleted successfully" });
     }
     catch (error) {
@@ -96,6 +105,12 @@ const deleteMultipleDiscussions = (req, res, next) => __awaiter(void 0, void 0, 
     try {
         const { ids } = req.body;
         const result = yield discussionPost_1.default.deleteMany({ _id: { $in: ids } });
+        if (!result.acknowledged) {
+            res.status(400).json({ error: "Discussions was not deleted" });
+            return;
+        }
+        // Delete replies associated with the discussions
+        yield reply_1.default.deleteMany({ postId: { $in: ids } });
         res.status(200).json({
             message: `${result.deletedCount.toString()} discussion(s) deleted successfully`,
         });

@@ -44,12 +44,12 @@ const router = express_1.default.Router();
 /**
  * Reply Routes
  * POST /api/replies - Create a reply post
- * GET /api/replies/:discussionId - Get reply posts for a discussion
+ * GET /api/replies/:postId - Get reply posts for a discussion
  * PUT /api/replies/:id - Edit a reply post
  * DELETE /api/replies/:id - Delete a reply post
  */
 router.post("/", auth_1.requireSignedIn, ReplyValidator.createReply, ReplyController.createReply);
-router.get("/:discussionId", auth_1.requireSignedIn, ReplyValidator.getReplies, ReplyController.getReplies);
+router.get("/:postId", auth_1.requireSignedIn, ReplyValidator.getReplies, ReplyController.getReplies);
 router.put("/:id", auth_1.requireSignedIn, ReplyValidator.editReply, ReplyController.editReply);
 router.delete("/:id", auth_1.requireSignedIn, ReplyValidator.deleteReply, ReplyController.deleteReply);
 exports.default = router;
