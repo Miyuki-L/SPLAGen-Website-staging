@@ -8,11 +8,22 @@ var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, ge
         step((generator = generator.apply(thisArg, _arguments || [])).next());
     });
 };
+var __importDefault = (this && this.__importDefault) || function (mod) {
+    return (mod && mod.__esModule) ? mod : { "default": mod };
+};
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.getIndividualAnnouncementDetails = exports.getMultipleAnnouncements = exports.deleteAnnouncement = exports.editAnnouncement = exports.createAnnouncement = void 0;
+const announcement_1 = __importDefault(require("../models/announcement"));
+const user_1 = require("../models/user");
 const createAnnouncement = (req, res, next) => __awaiter(void 0, void 0, void 0, function* () {
     try {
-        res.status(200).send("Create announcement route works!");
+        const { title, message, recipients } = req.body;
+        const userId = req.mongoID;
+        const newAnnouncement = new announcement_1.default({ userId, title, message, recipients });
+        yield newAnnouncement.save();
+        res
+            .status(201)
+            .json({ message: "Announcement created successfully", announcement: newAnnouncement });
     }
     catch (error) {
         next(error);
@@ -39,7 +50,15 @@ const deleteAnnouncement = (req, res, next) => __awaiter(void 0, void 0, void 0,
 exports.deleteAnnouncement = deleteAnnouncement;
 const getMultipleAnnouncements = (req, res, next) => __awaiter(void 0, void 0, void 0, function* () {
     try {
-        res.status(200).send("Get multiple announcements route works!");
+        const userRole = req.role;
+        const userEmail = req.userEmail;
+        let query = {};
+        if (![user_1.UserRole.ADMIN, user_1.UserRole.SUPERADMIN].includes(userRole)) {
+            // If the user is not an admin or super admin, filter announcements by their email
+            query = { recipients: { $in: [userEmail, "everyone"] } };
+        }
+        const announcements = yield announcement_1.default.find(query);
+        res.status(200).json({ announcements });
     }
     catch (error) {
         next(error);
@@ -48,6 +67,7 @@ const getMultipleAnnouncements = (req, res, next) => __awaiter(void 0, void 0, v
 exports.getMultipleAnnouncements = getMultipleAnnouncements;
 const getIndividualAnnouncementDetails = (req, res, next) => __awaiter(void 0, void 0, void 0, function* () {
     try {
+        //TODO: validate that the user is allowed to see the announcement
         res.status(200).send("Get individual announcement details route works!");
     }
     catch (error) {

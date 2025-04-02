@@ -57,6 +57,7 @@ const requireSignedIn = (req, res, next) => __awaiter(void 0, void 0, void 0, fu
     // if (!token) {
     //  return res.status(401).send("Token was not found in header. Be sure to use Bearer <Token> syntax");
     // }
+    var _a;
     // let userInfo;
     // try {
     //   userInfo = await decodeAuthToken(token);
@@ -64,7 +65,8 @@ const requireSignedIn = (req, res, next) => __awaiter(void 0, void 0, void 0, fu
     //   return res.status(401).send("Token was invalid.");
     // })
     //TODO: remove temporary user info (the line below)
-    const userInfo = { uid: "unique-firebase-id-002" };
+    const userInfo = { uid: "unique-firebase-id-001" }; //MEMBER
+    // const userInfo = { uid: "unique-firebase-id-002" }; //admin
     if (userInfo) {
         const user = yield user_1.default.findOne({ firebaseId: userInfo.uid });
         if (!user) {
@@ -74,6 +76,7 @@ const requireSignedIn = (req, res, next) => __awaiter(void 0, void 0, void 0, fu
         req.firebaseUid = userInfo.uid;
         req.role = user.role;
         req.mongoID = user._id;
+        req.userEmail = (_a = user.personal) === null || _a === void 0 ? void 0 : _a.email;
         next();
         return;
     }

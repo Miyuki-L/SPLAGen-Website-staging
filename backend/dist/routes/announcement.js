@@ -39,11 +39,12 @@ Object.defineProperty(exports, "__esModule", { value: true });
 const express_1 = __importDefault(require("express"));
 const AnnouncementController = __importStar(require("../controllers/announcement"));
 const auth_1 = require("../middleware/auth");
+const AnnouncementValidator = __importStar(require("../validators/announcement"));
 const router = express_1.default.Router();
 //TODO add validators
-router.post("/create", auth_1.requireSignedIn, auth_1.requireAdminOrSuperAdmin, AnnouncementController.createAnnouncement);
-router.put("/edit/:id", auth_1.requireSignedIn, auth_1.requireAdminOrSuperAdmin, AnnouncementController.editAnnouncement);
-router.delete("/delete/:id", auth_1.requireSignedIn, auth_1.requireAdminOrSuperAdmin, AnnouncementController.deleteAnnouncement);
-router.get("/all", auth_1.requireSignedIn, AnnouncementController.getMultipleAnnouncements);
+router.post("/", auth_1.requireSignedIn, auth_1.requireAdminOrSuperAdmin, AnnouncementValidator.createAnnouncement, AnnouncementController.createAnnouncement);
+router.put("/:id", auth_1.requireSignedIn, auth_1.requireAdminOrSuperAdmin, AnnouncementController.editAnnouncement);
+router.delete("/:id", auth_1.requireSignedIn, auth_1.requireAdminOrSuperAdmin, AnnouncementController.deleteAnnouncement);
+router.get("/", auth_1.requireSignedIn, AnnouncementController.getMultipleAnnouncements);
 router.get("/:id", auth_1.requireSignedIn, AnnouncementController.getIndividualAnnouncementDetails);
 exports.default = router;

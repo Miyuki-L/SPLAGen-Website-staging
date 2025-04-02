@@ -46,7 +46,7 @@ app.use(express_1.default.urlencoded({ extended: true }));
 app.use((0, cors_1.default)({
     origin: process.env.FRONTEND_ORIGIN,
 }));
-app.use("/api/announcement", announcement_1.default);
+app.use("/api/announcements", announcement_1.default);
 app.use("/api/users", user_1.default);
 app.use("/api/discussions", discussion_1.default);
 app.use("/api/replies", reply_1.default);
