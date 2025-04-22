@@ -43,4 +43,5 @@ const DirectoryValidator = __importStar(require("../validators/directory"));
 const router = express_1.default.Router();
 router.post("/approve", auth_1.requireSignedIn, auth_1.requireAdminOrSuperAdmin, DirectoryValidator.approveDirectoryEntry, DirectoryController.approveDirectoryEntry);
 router.post("/deny", auth_1.requireSignedIn, auth_1.requireAdminOrSuperAdmin, DirectoryValidator.denyDirectoryEntry, DirectoryController.denyDirectoryEntry);
+router.post("/public", DirectoryController.getPublicDirectory);
 exports.default = router;
