@@ -12,13 +12,63 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
     return (mod && mod.__esModule) ? mod : { "default": mod };
 };
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.editDirectoryDisplayInfo = exports.getDirectoryDisplayInfo = exports.editDirectoryPersonalInformation = exports.getDirectoryPersonalInformation = exports.editProfessionalInformation = exports.getProfessionalInformation = exports.editPersonalInformation = exports.getPersonalInformation = exports.getUser = exports.getAllUsers = exports.deleteUser = exports.createUser = exports.getWhoAmI = exports.users = void 0;
+exports.editDirectoryDisplayInfo = exports.getDirectoryDisplayInfo = exports.editDirectoryPersonalInformation = exports.getDirectoryPersonalInformation = exports.editProfessionalInformation = exports.getProfessionalInformation = exports.editPersonalInformation = exports.getPersonalInformation = exports.getUser = exports.getAllUsers = exports.deleteUser = exports.getWhoAmI = exports.authenticateUser = exports.createUser = void 0;
 const user_1 = __importDefault(require("../models/user"));
-exports.users = [];
-/**
- * Retrieves data about the current user (their MongoDB ID, Firebase UID, and role, personal object).
- * Requires the user to be signed in.
- */
+const firebase_1 = require("../util/firebase");
+const user_2 = require("../util/user");
+const createUser = (req, res, next) => __awaiter(void 0, void 0, void 0, function* () {
+    try {
+        const { account, personal, professional, education, associate, password } = req.body;
+        // Create user in Firebase
+        const userRecord = yield firebase_1.firebaseAdminAuth.createUser({
+            email: personal.email,
+            password,
+        });
+        // Create new user in MongoDB
+        const newUser = yield user_1.default.create({
+            firebaseId: userRecord.uid,
+            role: "member",
+            account: Object.assign(Object.assign({}, account), { inDirectory: false }),
+            personal,
+            professional,
+            education,
+            associate,
+        });
+        res.status(201).json(newUser);
+        return;
+    }
+    catch (error) {
+        console.error("Error creating user:", error);
+        next(error);
+        return;
+    }
+});
+exports.createUser = createUser;
+const authenticateUser = (req, res, next) => __awaiter(void 0, void 0, void 0, function* () {
+    var _a;
+    try {
+        const { firebaseUid } = req;
+        // Fetch user from MongoDB using firebaseUid (firebaseUid should already be added by requireSignedIn)
+        const user = yield user_1.default.findOne({ firebaseId: firebaseUid });
+        if (!user) {
+            res.status(404).json({ error: "User not found" });
+            return;
+        }
+        res.status(200).json({
+            firebaseId: firebaseUid,
+            role: user.role,
+            personal: user.personal,
+            email: (_a = user.personal) === null || _a === void 0 ? void 0 : _a.email,
+        });
+        return;
+    }
+    catch (error) {
+        console.error("Error during user authentication:", error);
+        next(error);
+        return;
+    }
+});
+exports.authenticateUser = authenticateUser;
 const getWhoAmI = (req, res, next) => __awaiter(void 0, void 0, void 0, function* () {
     try {
         const { firebaseUid } = req;
@@ -27,161 +77,251 @@ const getWhoAmI = (req, res, next) => __awaiter(void 0, void 0, void 0, function
             res.status(404).json({ error: "User not found" });
             return;
         }
-        const { _id, firebaseId, role, personal } = user;
-        res.status(200).send({
-            _id,
-            firebaseId,
-            role,
-            personal,
+        res.status(200).json({
+            firebaseId: user.firebaseId,
+            role: user.role,
+            personal: user.personal,
         });
+        return;
     }
     catch (error) {
         next(error);
+        return;
     }
 });
 exports.getWhoAmI = getWhoAmI;
-const createUser = (req, res) => {
+const deleteUser = (req, res, next) => __awaiter(void 0, void 0, void 0, function* () {
     try {
-        const { name, email, accountType } = req.body;
-        if (!name || !email) {
-            res.status(400).json({ error: "Name and email are required" });
-            return;
-        }
-        const newUser = {
-            id: exports.users.length + 1,
-            name,
-            email,
-            accountType,
-        };
-        exports.users.push(newUser);
-        res.status(201).json({ message: "User created successfully", user: newUser });
-    }
-    catch (error) {
-        console.error("Error creating user:", error);
-        res.status(500).json({ error: "Internal server error" });
-    }
-};
-exports.createUser = createUser;
-const deleteUser = (req, res) => {
-    try {
-        const id = parseInt(req.params.id, 10);
-        if (isNaN(id)) {
-            res.status(400).json({ error: "Valid user ID is required" });
-            return;
-        }
-        const index = exports.users.findIndex((user) => user.id === id);
-        if (index === -1) {
-            res.status(404).json({ error: "User not found" });
-            return;
-        }
-        exports.users.splice(index, 1);
+        const { firebaseId } = req.params;
+        // Delete user from Firebase and MongoDB
+        yield (0, user_2.deleteUserFromFirebase)(firebaseId);
+        yield (0, user_2.deleteUserFromMongoDB)(firebaseId);
         res.status(200).json({ message: "User deleted successfully" });
+        return;
     }
     catch (error) {
         console.error("Error deleting user:", error);
-        res.status(500).json({ error: "Internal server error" });
+        next(error);
+        return;
     }
-};
+});
 exports.deleteUser = deleteUser;
-const getAllUsers = (req, res, next) => __awaiter(void 0, void 0, void 0, function* () {
+const getAllUsers = (_req, res, next) => __awaiter(void 0, void 0, void 0, function* () {
     try {
-        const allUsers = yield user_1.default.find();
-        res.status(200).json({ allUsers });
+        const users = yield user_1.default.find({}).exec();
+        res.status(200).json({ users });
+        return;
     }
     catch (error) {
+        console.error("Error getting users:", error);
         next(error);
+        return;
     }
 });
 exports.getAllUsers = getAllUsers;
-const getUser = (req, res) => {
+const getUser = (req, res, next) => __awaiter(void 0, void 0, void 0, function* () {
     try {
-        const id = parseInt(req.params.id, 10);
-        if (isNaN(id)) {
-            res.status(400).json({ error: "Valid user ID is required" });
-            return;
-        }
-        const user = exports.users.find((u) => u.id === id);
+        const { firebaseId } = req.params;
+        const user = yield (0, user_2.getUserFromMongoDB)(firebaseId);
         if (!user) {
             res.status(404).json({ error: "User not found" });
             return;
         }
-        res.status(200).json({ user });
+        res.status(200).json(user);
+        return;
     }
     catch (error) {
         console.error("Error getting user:", error);
-        res.status(500).json({ error: "Internal server error" });
+        next(error);
+        return;
     }
-};
+});
 exports.getUser = getUser;
 const getPersonalInformation = (req, res, next) => __awaiter(void 0, void 0, void 0, function* () {
     try {
-        res.status(200).send("Get personal information route works!");
+        const { firebaseUid } = req;
+        const user = yield user_1.default.findOne({ firebaseId: firebaseUid });
+        if (!user) {
+            res.status(404).json({ error: "User not found" });
+            return;
+        }
+        res.status(200).json(user.personal);
+        return;
     }
     catch (error) {
+        console.error("Error fetching personal information:", error);
         next(error);
+        return;
     }
 });
 exports.getPersonalInformation = getPersonalInformation;
 const editPersonalInformation = (req, res, next) => __awaiter(void 0, void 0, void 0, function* () {
     try {
-        res.status(200).send("Edit personal information route works!");
+        const { firebaseUid } = req;
+        const { newFirstName, newLastName, newEmail, newPhone } = req.body;
+        const updatedUser = yield user_1.default.findOneAndUpdate({ firebaseId: firebaseUid }, {
+            "personal.firstName": newFirstName,
+            "personal.lastName": newLastName,
+            "personal.email": newEmail,
+            "personal.phone": newPhone,
+        }, { new: true, runValidators: true });
+        if (!updatedUser) {
+            res.status(404).json({ error: "User not found" });
+            return;
+        }
+        res
+            .status(200)
+            .json({ message: "Personal information updated", personal: updatedUser.personal });
+        return;
     }
     catch (error) {
+        console.error("Error updating personal information:", error);
         next(error);
+        return;
     }
 });
 exports.editPersonalInformation = editPersonalInformation;
 const getProfessionalInformation = (req, res, next) => __awaiter(void 0, void 0, void 0, function* () {
     try {
-        res.status(200).send("Get professional information route works!");
+        const { firebaseUid } = req;
+        const user = yield user_1.default.findOne({ firebaseId: firebaseUid });
+        if (!user) {
+            res.status(404).json({ error: "User not found" });
+            return;
+        }
+        res.status(200).json(user.professional);
+        return;
     }
     catch (error) {
+        console.error("Error fetching professional information:", error);
         next(error);
+        return;
     }
 });
 exports.getProfessionalInformation = getProfessionalInformation;
 const editProfessionalInformation = (req, res, next) => __awaiter(void 0, void 0, void 0, function* () {
     try {
-        res.status(200).send("Edit professional information route works!");
+        const { firebaseUid } = req;
+        const { newTitle, newPrefLanguages, newOtherPrefLanguages, newCountry } = req.body;
+        const updatedUser = yield user_1.default.findOneAndUpdate({ firebaseId: firebaseUid }, {
+            "professional.title": newTitle,
+            "professional.prefLanguages": newPrefLanguages,
+            "professional.otherPrefLanguages": newOtherPrefLanguages,
+            "professional.country": newCountry,
+        }, { new: true, runValidators: true });
+        if (!updatedUser) {
+            res.status(404).json({ error: "User not found" });
+            return;
+        }
+        res.status(200).json({
+            message: "Professional information updated",
+            professional: updatedUser.professional,
+        });
+        return;
     }
     catch (error) {
+        console.error("Error updating professional information:", error);
         next(error);
+        return;
     }
 });
 exports.editProfessionalInformation = editProfessionalInformation;
 const getDirectoryPersonalInformation = (req, res, next) => __awaiter(void 0, void 0, void 0, function* () {
     try {
-        res.status(200).send("Get directory personal information route works!");
+        const { firebaseUid } = req;
+        const user = yield user_1.default.findOne({ firebaseId: firebaseUid });
+        if (!user) {
+            res.status(404).json({ error: "User not found" });
+            return;
+        }
+        // Combine education and clinic fields for directory information
+        res.status(200).json(Object.assign(Object.assign({}, user.education), user.clinic));
+        return;
     }
     catch (error) {
+        console.error("Error fetching directory personal information:", error);
         next(error);
+        return;
     }
 });
 exports.getDirectoryPersonalInformation = getDirectoryPersonalInformation;
 const editDirectoryPersonalInformation = (req, res, next) => __awaiter(void 0, void 0, void 0, function* () {
     try {
-        res.status(200).send("Edit directory personal information route works!");
+        const { firebaseUid } = req;
+        const { newDegree, newEducationInstitution, newClinicName, newClinicWebsiteUrl, newClinicAddress, newClinicCountry, newClinicApartmentSuite, newClinicCity, newClinicState, newClinicZipPostCode, } = req.body;
+        const updatedUser = yield user_1.default.findOneAndUpdate({ firebaseId: firebaseUid }, {
+            "education.degree": newDegree,
+            "education.institution": newEducationInstitution,
+            "clinic.name": newClinicName,
+            "clinic.url": newClinicWebsiteUrl,
+            "clinic.location.address": newClinicAddress,
+            "clinic.location.country": newClinicCountry,
+            "clinic.location.suite": newClinicApartmentSuite,
+            "clinic.location.city": newClinicCity,
+            "clinic.location.state": newClinicState,
+            "clinic.location.zipCode": newClinicZipPostCode,
+        }, { new: true, runValidators: true });
+        if (!updatedUser) {
+            res.status(404).json({ error: "User not found" });
+            return;
+        }
+        res.status(200).json({
+            message: "Directory personal information updated",
+            directoryInfo: Object.assign(Object.assign({}, updatedUser.education), updatedUser.clinic),
+        });
+        return;
     }
     catch (error) {
+        console.error("Error updating directory personal information:", error);
         next(error);
+        return;
     }
 });
 exports.editDirectoryPersonalInformation = editDirectoryPersonalInformation;
 const getDirectoryDisplayInfo = (req, res, next) => __awaiter(void 0, void 0, void 0, function* () {
     try {
-        res.status(200).send("get directory display information route works!");
+        const { firebaseUid } = req;
+        const user = yield user_1.default.findOne({ firebaseId: firebaseUid });
+        if (!user) {
+            res.status(404).json({ error: "User not found" });
+            return;
+        }
+        res.status(200).json(user.display);
+        return;
     }
     catch (error) {
+        console.error("Error fetching directory display information:", error);
         next(error);
+        return;
     }
 });
 exports.getDirectoryDisplayInfo = getDirectoryDisplayInfo;
 const editDirectoryDisplayInfo = (req, res, next) => __awaiter(void 0, void 0, void 0, function* () {
     try {
-        res.status(200).send("Edit directory display information route works!");
+        const { firebaseUid } = req;
+        const { newWorkEmail, newWorkPhone, newServices, newLanguages, newLicense, newRemoteOption, newRequestOption, } = req.body;
+        const updatedUser = yield user_1.default.findOneAndUpdate({ firebaseId: firebaseUid }, {
+            "display.workEmail": newWorkEmail,
+            "display.workPhone": newWorkPhone,
+            "display.services": newServices,
+            "display.languages": newLanguages,
+            "display.license": newLicense,
+            "display.options.remote": newRemoteOption,
+            "display.options.openToRequests": newRequestOption,
+        }, { new: true, runValidators: true });
+        if (!updatedUser) {
+            res.status(404).json({ error: "User not found" });
+            return;
+        }
+        res
+            .status(200)
+            .json({ message: "Directory display information updated", display: updatedUser.display });
+        return;
     }
     catch (error) {
+        console.error("Error updating directory display information:", error);
         next(error);
+        return;
     }
 });
 exports.editDirectoryDisplayInfo = editDirectoryDisplayInfo;

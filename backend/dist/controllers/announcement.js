@@ -30,23 +30,23 @@ const createAnnouncement = (req, res, next) => __awaiter(void 0, void 0, void 0,
     }
 });
 exports.createAnnouncement = createAnnouncement;
-const editAnnouncement = (req, res, next) => __awaiter(void 0, void 0, void 0, function* () {
+const editAnnouncement = (req, res, next) => {
     try {
         res.status(200).send("Edit announcement route works!");
     }
     catch (error) {
         next(error);
     }
-});
+};
 exports.editAnnouncement = editAnnouncement;
-const deleteAnnouncement = (req, res, next) => __awaiter(void 0, void 0, void 0, function* () {
+const deleteAnnouncement = (req, res, next) => {
     try {
         res.status(200).send("Delete announcement route works!");
     }
     catch (error) {
         next(error);
     }
-});
+};
 exports.deleteAnnouncement = deleteAnnouncement;
 const getMultipleAnnouncements = (req, res, next) => __awaiter(void 0, void 0, void 0, function* () {
     try {
@@ -65,7 +65,7 @@ const getMultipleAnnouncements = (req, res, next) => __awaiter(void 0, void 0, v
     }
 });
 exports.getMultipleAnnouncements = getMultipleAnnouncements;
-const getIndividualAnnouncementDetails = (req, res, next) => __awaiter(void 0, void 0, void 0, function* () {
+const getIndividualAnnouncementDetails = (req, res, next) => {
     try {
         //TODO: validate that the user is allowed to see the announcement
         res.status(200).send("Get individual announcement details route works!");
@@ -73,5 +73,5 @@ const getIndividualAnnouncementDetails = (req, res, next) => __awaiter(void 0, v
     catch (error) {
         next(error);
     }
-});
+};
 exports.getIndividualAnnouncementDetails = getIndividualAnnouncementDetails;

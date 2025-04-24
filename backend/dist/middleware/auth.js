@@ -41,48 +41,87 @@ var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, ge
         step((generator = generator.apply(thisArg, _arguments || [])).next());
     });
 };
+var __importDefault = (this && this.__importDefault) || function (mod) {
+    return (mod && mod.__esModule) ? mod : { "default": mod };
+};
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.requireSuperAdmin = exports.requireAdminOrSuperAdmin = exports.requireSignedIn = void 0;
 const user_1 = __importStar(require("../models/user"));
+const firebase_1 = require("../util/firebase");
+const validateEnv_1 = __importDefault(require("../util/validateEnv"));
 const DEFAULT_ERROR = 403;
-/**
- * A middleware that requires the user to be signed in and have a valid Firebase token
- * in the "Authorization" header
- */
+const SECURITY_BYPASS_ENABLED = validateEnv_1.default.SECURITY_BYPASS;
+// Firebase Authentication Verification
+const verifyFirebaseToken = (token) => __awaiter(void 0, void 0, void 0, function* () {
+    try {
+        // Verify Firebase token using Firebase Admin SDK
+        const decodedToken = yield firebase_1.firebaseAdminAuth.verifyIdToken(token);
+        return decodedToken; // returns decoded user data, including UID
+    }
+    catch (error) {
+        if (!(error instanceof Error)) {
+            console.error("Unknown error verifying Firebase token:", error);
+            throw new Error(`Token verification failed for token: ${token}. Unknown error occurred.`);
+        }
+        else {
+            console.error("Error verifying Firebase token:", error);
+            throw new Error(`Token verification failed for token: ${token}. Error details: ${error}`);
+        }
+    }
+});
+// Middleware to require the user to be signed in with a valid Firebase token
 const requireSignedIn = (req, res, next) => __awaiter(void 0, void 0, void 0, function* () {
-    // TODO uncomment when Firebase is set up
-    // const authHeader = req.headers.authorization;
-    // // Token should be "Bearer: <token>"
-    // const token = authHeader?.split("Bearer ")[1];
-    // if (!token) {
-    //  return res.status(401).send("Token was not found in header. Be sure to use Bearer <Token> syntax");
-    // }
-    var _a;
-    // let userInfo;
-    // try {
-    //   userInfo = await decodeAuthToken(token);
-    // } catch (error) {
-    //   return res.status(401).send("Token was invalid.");
-    // })
-    //TODO: remove temporary user info (the line below)
-    const userInfo = { uid: "unique-firebase-id-001" }; //MEMBER
-    // const userInfo = { uid: "unique-firebase-id-002" }; //admin
-    if (userInfo) {
-        const user = yield user_1.default.findOne({ firebaseId: userInfo.uid });
+    var _a, _b;
+    if (SECURITY_BYPASS_ENABLED) {
+        req.firebaseUid = "unique-firebase-id-001";
+        const user = yield user_1.default.findOne({ firebaseId: req.firebaseUid });
         if (!user) {
-            res.status(401).send("User not found");
+            res.status(401).send("User not found.");
             return;
         }
-        req.firebaseUid = userInfo.uid;
+        console.warn("[SECURITY BYPASS] Skipping authentication for development mode.");
         req.role = user.role;
         req.mongoID = user._id;
         req.userEmail = (_a = user.personal) === null || _a === void 0 ? void 0 : _a.email;
         next();
         return;
     }
-    res.status(401).send("Token was invalid.");
+    // Extract the Firebase token from the "Authorization" header
+    const authHeader = req.headers.authorization;
+    // Check if the header starts with "Bearer " and if the token is non-empty
+    const token = authHeader === null || authHeader === void 0 ? void 0 : authHeader.split("Bearer ")[1];
+    if (!token) {
+        res.status(403).send("Authorization token is missing or invalid.");
+        return;
+    }
+    try {
+        // Verify the Firebase ID token
+        const decodedToken = yield verifyFirebaseToken(token);
+        if (decodedToken.email === undefined || !decodedToken.email_verified) {
+            res.status(403).json({ error: "Please verify your email first!" });
+            return;
+        }
+        // Fetch the user from MongoDB using the firebaseUid
+        const user = yield user_1.default.findOne({ firebaseId: decodedToken.uid });
+        if (!user) {
+            res.status(401).send("User not found.");
+            return;
+        }
+        // Attach user details to the request object for downstream routes
+        req.firebaseUid = decodedToken.uid;
+        req.role = user.role;
+        req.mongoID = user._id;
+        req.userEmail = (_b = user.personal) === null || _b === void 0 ? void 0 : _b.email;
+        next();
+    }
+    catch (error) {
+        console.error("Firebase token verification failed:", error);
+        res.status(401).send("Token verification failed. Please log in again.");
+        return;
+    }
 });
 exports.requireSignedIn = requireSignedIn;
+// Middleware to require the user to be an admin or superadmin
 const requireAdminOrSuperAdmin = (req, res, next) => __awaiter(void 0, void 0, void 0, function* () {
     try {
         const { firebaseUid } = req;
@@ -98,6 +137,7 @@ const requireAdminOrSuperAdmin = (req, res, next) => __awaiter(void 0, void 0, v
     }
 });
 exports.requireAdminOrSuperAdmin = requireAdminOrSuperAdmin;
+// Middleware to require the user to be a superadmin
 const requireSuperAdmin = (req, res, next) => __awaiter(void 0, void 0, void 0, function* () {
     try {
         const { firebaseUid } = req;
