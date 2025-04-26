@@ -21,7 +21,7 @@ const userSchema = new mongoose_1.Schema({
     account: {
         inDirectory: {
             type: mongoose_1.Schema.Types.Mixed, // Allows boolean or string
-            default: "pending",
+            default: false,
             validate: {
                 validator: function (v) {
                     return v === true || v === false || v === "pending";
@@ -125,6 +125,17 @@ const userSchema = new mongoose_1.Schema({
             openToAppointments: { type: Boolean, default: false },
             openToRequests: { type: Boolean, default: false },
             remote: { type: Boolean, default: false },
+            authorizedCare: {
+                type: mongoose_1.Schema.Types.Mixed, // Allows boolean or string
+                default: false,
+                validate: {
+                    validator: function (v) {
+                        return v === true || v === false || v === "unsure";
+                    },
+                    message: "Status must be true, false, or 'unsure'",
+                },
+                required: true,
+            },
         },
         comments: {
             noLicense: { type: String },
