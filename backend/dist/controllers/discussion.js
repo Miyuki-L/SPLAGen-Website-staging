@@ -24,7 +24,7 @@ const createDiscussion = (req, res, next) => __awaiter(void 0, void 0, void 0, f
         const userId = req.mongoID;
         const newDiscussion = new discussionPost_1.default({ userId, title, message, channel });
         yield newDiscussion.save();
-        res.status(201).json({ message: "Discussion created successfully", discussion: newDiscussion });
+        res.status(201).json(newDiscussion);
     }
     catch (error) {
         next(error);
@@ -60,7 +60,7 @@ const editDiscussion = (req, res, next) => __awaiter(void 0, void 0, void 0, fun
             res.status(400).json({ error: "Discussion not updated" });
             return;
         }
-        res.status(200).json({ message: "Discussion updated successfully", discussion });
+        res.status(200).json(discussion);
     }
     catch (error) {
         next(error);
