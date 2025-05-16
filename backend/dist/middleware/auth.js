@@ -72,6 +72,14 @@ const verifyFirebaseToken = (token) => __awaiter(void 0, void 0, void 0, functio
 // Middleware to require the user to be signed in with a valid Firebase token
 const requireSignedIn = (req, res, next) => __awaiter(void 0, void 0, void 0, function* () {
     var _a, _b;
+    // Extract the Firebase token from the "Authorization" header
+    const authHeader = req.headers.authorization;
+    // Check if the header starts with "Bearer " and if the token is non-empty
+    const token = authHeader === null || authHeader === void 0 ? void 0 : authHeader.split("Bearer ")[1];
+    if (!token) {
+        res.status(403).send("Authorization token is missing or invalid.");
+        return;
+    }
     if (SECURITY_BYPASS_ENABLED) {
         req.firebaseUid = "unique-firebase-id-001";
         const user = yield user_1.default.findOne({ firebaseId: req.firebaseUid });
@@ -84,14 +92,6 @@ const requireSignedIn = (req, res, next) => __awaiter(void 0, void 0, void 0, fu
         req.mongoID = user._id;
         req.userEmail = (_a = user.personal) === null || _a === void 0 ? void 0 : _a.email;
         next();
-        return;
-    }
-    // Extract the Firebase token from the "Authorization" header
-    const authHeader = req.headers.authorization;
-    // Check if the header starts with "Bearer " and if the token is non-empty
-    const token = authHeader === null || authHeader === void 0 ? void 0 : authHeader.split("Bearer ")[1];
-    if (!token) {
-        res.status(403).send("Authorization token is missing or invalid.");
         return;
     }
     try {
