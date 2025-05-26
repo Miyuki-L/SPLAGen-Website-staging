@@ -51,16 +51,15 @@ const router = express_1.default.Router();
  */
 router.get("/whoami", auth_1.requireSignedIn, UserController.getWhoAmI);
 router.post("/", UserValidator.createUser, UserController.createUser);
-router.delete("/:id", auth_1.requireSignedIn, auth_1.requireAdminOrSuperAdmin, UserValidator.deleteUser, UserController.deleteUser);
+router.delete("/:firebaseId", auth_1.requireSignedIn, auth_1.requireAdminOrSuperAdmin, UserValidator.deleteUser, UserController.deleteUser);
 router.get("/", auth_1.requireSignedIn, UserController.getAllUsers);
-router.get("/:id", auth_1.requireSignedIn, UserValidator.getUser, UserController.getUser);
+router.get("/:firebaseId", auth_1.requireSignedIn, UserValidator.getUser, UserController.getUser);
 router.post("/authenticate", auth_1.requireSignedIn, UserController.authenticateUser);
 // Personal information routes
-router.get("/personal-information", auth_1.requireSignedIn, UserController.getPersonalInformation);
-router.put("/personal-information", auth_1.requireSignedIn, UserValidator.editPersonalInformation, UserController.editPersonalInformation);
+router.get("/general/personal-information", auth_1.requireSignedIn, UserController.getPersonalInformation);
+router.put("/general/personal-information", auth_1.requireSignedIn, UserValidator.editPersonalInformation, UserController.editPersonalInformation);
 // Professional information routes
-router.get("/professional-information", auth_1.requireSignedIn, UserController.getProfessionalInformation);
-router.put("/professional-information", auth_1.requireSignedIn, UserValidator.editProfessionalInformation, UserController.editProfessionalInformation);
+router.put("/general/professional-information", auth_1.requireSignedIn, UserValidator.editProfessionalInformation, UserController.editProfessionalInformation);
 // Directory personal information routes
 router.get("/directory/personal-information", auth_1.requireSignedIn, UserController.getDirectoryPersonalInformation);
 router.put("/directory/personal-information", auth_1.requireSignedIn, UserValidator.editDirectoryPersonalInformation, UserController.editDirectoryPersonalInformation);

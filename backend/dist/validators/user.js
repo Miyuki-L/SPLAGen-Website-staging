@@ -44,7 +44,7 @@ exports.editProfessionalInformation = [
     (0, express_validator_1.body)("newOtherPrefLanguages")
         .isString()
         .withMessage("Other preferred languages must be a string"),
-    (0, express_validator_1.body)("newCountry").isString().withMessage("Country must be a string"),
+    (0, express_validator_1.body)("newCountry").optional().isString().withMessage("Country must be a string"),
     validateRequestHelper_1.validateRequest,
 ];
 exports.editDirectoryPersonalInformation = [

@@ -77,11 +77,7 @@ const getWhoAmI = (req, res, next) => __awaiter(void 0, void 0, void 0, function
             res.status(404).json({ error: "User not found" });
             return;
         }
-        res.status(200).json({
-            firebaseId: user.firebaseId,
-            role: user.role,
-            personal: user.personal,
-        });
+        res.status(200).json(user);
         return;
     }
     catch (error) {
